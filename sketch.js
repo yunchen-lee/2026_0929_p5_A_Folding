@@ -13,6 +13,7 @@ function setup() {
         h: 600
     })
     paper.setup();
+    paper.foldPaper();
     paper.draw();
 
     noStroke();
@@ -47,6 +48,10 @@ class Paper {
         this.h = args.h;
         this.paperPieces = [];
         this.resolution = 5;
+
+        // folding
+        this.foldingStartPt;
+        this.foldingEndPt;
     }
 
     setup() {
@@ -104,4 +109,49 @@ class Paper {
         })
     }
 
+
+    foldPaper() {
+
+        this.temp = [];
+
+        let piece = random(this.paperPieces);
+        let index1 = Math.floor(Math.random() * piece.vertices.length);
+        let index2;
+
+        do {
+            index2 = Math.floor(Math.random() * piece.vertices.length);
+        } while (index1 === index2);
+
+        this.foldingStartPt = piece.vertices[index1];
+        this.foldingEndPt = piece.vertices[index2];
+
+        // console.log(this.foldingStartPt, this.foldingEndPt)
+
+        piece.vertices.forEach(v => {
+            push();
+
+            fill(255);
+            if (this.isLeft(this.foldingStartPt, this.foldingEndPt, v)) {
+                fill(255, 0, 0);
+                let relected = this.reflectByTwoPoints(this.foldingStartPt, this.foldingEndPt, v);
+                circle(relected.x, relected.y, 3);
+            }
+            circle(v.x, v.y, 3);
+            pop();
+        })
+
+
+    }
+
+    isLeft(a, b, c) {
+        return (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x) > 0;
+    }
+
+    reflectByTwoPoints(p1, p2, input) {
+        let a = (p2.y - p1.y) / (p2.x - p1.x);
+        let b = p1.y - a * p1.x;
+        let px = input.x * (1 - pow(a, 2)) / (1 + pow(a, 2)) + (input.y - b) * (2 * a) / (pow(a, 2) + 1);
+        let py = input.x * (2 * a) / (pow(a, 2) + 1) + (input.y - b) * (pow(a, 2) - 1) / (pow(a, 2) + 1) + b;
+        return createVector(px, py);
+    }
 }
