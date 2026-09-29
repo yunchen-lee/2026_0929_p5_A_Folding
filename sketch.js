@@ -3,7 +3,8 @@ let paper;
 
 function setup() {
     createCanvas(800, 800);
-    background(220);
+    background(0);
+    blendMode(SCREEN);
 
     paper = new Paper({
         x: 100,
@@ -14,10 +15,28 @@ function setup() {
     paper.setup();
     paper.draw();
 
+    noStroke();
+
 
 }
 
 function draw() {}
+
+class PaperPiece {
+    constructor(args) {
+        this.vertices = args.vertices;
+        this.clr = args.clr || 100;
+    }
+
+    draw() {
+        fill(this.clr);
+        beginShape();
+        this.vertices.forEach(v => {
+            vertex(v.x, v.y);
+        })
+        endShape(CLOSE);
+    }
+}
 
 
 class Paper {
@@ -28,10 +47,10 @@ class Paper {
         this.h = args.h;
         this.paperPieces = [];
         this.resolution = 5;
-        this.pts = [];
     }
 
     setup() {
+        let pts = [];
         let row = int(this.w / this.resolution);
         let col = int(this.h / this.resolution);
 
@@ -39,24 +58,31 @@ class Paper {
         for (let i = 0; i < row + 1; i++) {
             let px = this.x + i * this.resolution;
             let py = this.y;
-            this.pts.push(createVector(px, py));
+            pts.push(createVector(px, py));
         }
 
         for (let i = 0; i < col - 1; i++) {
             let px = this.w + this.x;
             let py = this.y + (i + 1) * this.resolution;
-            this.pts.push(createVector(px, py));
+            pts.push(createVector(px, py));
         }
         for (let i = 0; i < row + 1; i++) {
             let px = this.x + this.w - i * this.resolution;
             let py = this.h + this.y;
-            this.pts.push(createVector(px, py));
+            pts.push(createVector(px, py));
         }
         for (let i = 0; i < col - 1; i++) {
             let px = this.x;
             let py = this.y + this.h - (i + 1) * this.resolution;
-            this.pts.push(createVector(px, py))
+            pts.push(createVector(px, py))
         }
+
+        let piece = new PaperPiece({
+            vertices: pts
+        })
+
+        this.paperPieces.push(piece);
+
 
 
 
@@ -64,13 +90,17 @@ class Paper {
     }
 
     draw() {
-        this.pts.forEach(p => {
-            push();
-            translate(p.x, p.y);
-            fill(0);
-            noStroke();
-            circle(0, 0, 2);
-            pop();
+        // this.pts.forEach(p => {
+        //     push();
+        //     translate(p.x, p.y);
+        //     fill(255);
+        //     noStroke();
+        //     circle(0, 0, 2);
+        //     pop();
+        // })
+
+        this.paperPieces.forEach(piece => {
+            piece.draw();
         })
     }
 
