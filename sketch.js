@@ -27,6 +27,9 @@ class PaperPiece {
     constructor(args) {
         this.vertices = args.vertices;
         this.clr = args.clr || 100;
+        this.parent = args.parent;
+        this.childs = [];
+        this.status = true;
     }
 
     draw() {
@@ -104,7 +107,7 @@ class Paper {
         //     pop();
         // })
 
-        this.paperPieces.forEach(piece => {
+        this.paperPieces.filter(piece => piece.status == true).forEach(piece => {
             piece.draw();
         })
     }
@@ -127,6 +130,8 @@ class Paper {
 
         // console.log(this.foldingStartPt, this.foldingEndPt)
 
+        let ptsRight = [];
+        let ptsLeft = [];
         piece.vertices.forEach(v => {
             push();
 
@@ -134,11 +139,34 @@ class Paper {
             if (this.isLeft(this.foldingStartPt, this.foldingEndPt, v)) {
                 fill(255, 0, 0);
                 let relected = this.reflectByTwoPoints(this.foldingStartPt, this.foldingEndPt, v);
+                ptsLeft.push(relected);
                 circle(relected.x, relected.y, 3);
+            } else {
+                ptsRight.push(v);
             }
             circle(v.x, v.y, 3);
             pop();
         })
+
+        let newPts = this.addLine(this.foldingStartPt, this.foldingEndPt);
+        // console.log(newPts);
+        newPts.forEach(n => {
+            push();
+            fill(255, 255, 0);
+            circle(n.x, n.y, 3);
+            pop();
+        })
+
+        // console.log(this.paperPieces.indexOf(piece));
+        let idx = this.paperPieces.indexOf(piece);
+        this.paperPieces[idx].status = false;
+
+        let childLeft = new PaperPiece({
+            parent: idx,
+            vertices: ptsLeft.concat(this.getCrease(ptsLeft, newPts)),
+        })
+
+        this.paperPieces.push(childLeft);
 
 
     }
@@ -153,5 +181,31 @@ class Paper {
         let px = input.x * (1 - pow(a, 2)) / (1 + pow(a, 2)) + (input.y - b) * (2 * a) / (pow(a, 2) + 1);
         let py = input.x * (2 * a) / (pow(a, 2) + 1) + (input.y - b) * (pow(a, 2) - 1) / (pow(a, 2) + 1) + b;
         return createVector(px, py);
+    }
+
+    addLine(a, b) {
+        let pts = [];
+        let move = createVector(a.x - b.x, a.y - b.y);
+        let d = move.mag();
+
+        move.normalize();
+        move.mult(this.resolution);
+        let count = int(d / this.resolution);
+        for (let i = 0; i < count + 1; i++) {
+            let px = a.x - move.x * i;
+            let py = a.y - move.y * i;
+            pts.push(createVector(px, py));
+        }
+        return pts;
+    }
+
+    getCrease(originalPts, newPts) {
+        let d1 = dist(originalPts[0].x, originalPts[0].y, newPts[0].x, newPts[0].y)
+        let d2 = dist(originalPts[originalPts.length - 1].x, originalPts[originalPts.length - 1].y, newPts[0].x, newPts[0].y)
+
+        if (d1 < d2) {
+            newPts.reverse();
+        }
+        return newPts;
     }
 }
