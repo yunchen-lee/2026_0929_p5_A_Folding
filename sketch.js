@@ -59,42 +59,17 @@ class Paper {
 
     setup() {
         let pts = [];
-        let row = int(this.w / this.resolution);
-        let col = int(this.h / this.resolution);
 
-
-        for (let i = 0; i < row + 1; i++) {
-            let px = this.x + i * this.resolution;
-            let py = this.y;
-            pts.push(createVector(px, py));
-        }
-
-        for (let i = 0; i < col - 1; i++) {
-            let px = this.w + this.x;
-            let py = this.y + (i + 1) * this.resolution;
-            pts.push(createVector(px, py));
-        }
-        for (let i = 0; i < row + 1; i++) {
-            let px = this.x + this.w - i * this.resolution;
-            let py = this.h + this.y;
-            pts.push(createVector(px, py));
-        }
-        for (let i = 0; i < col - 1; i++) {
-            let px = this.x;
-            let py = this.y + this.h - (i + 1) * this.resolution;
-            pts.push(createVector(px, py))
-        }
+        pts.push(createVector(this.x, this.y));
+        pts.push(createVector(this.x + this.w, this.y));
+        pts.push(createVector(this.x + this.w, this.y + this.h));
+        pts.push(createVector(this.x, this.y + this.h));
 
         let piece = new PaperPiece({
             vertices: pts
         })
 
         this.paperPieces.push(piece);
-
-
-
-
-
     }
 
     draw() {
@@ -113,62 +88,155 @@ class Paper {
     }
 
 
+    // foldPaper() {
+
+    //     this.temp = [];
+
+    //     let piece = random(this.paperPieces);
+    //     let index1 = Math.floor(Math.random() * piece.vertices.length);
+    //     let index2;
+
+    //     do {
+    //         index2 = Math.floor(Math.random() * piece.vertices.length);
+    //     } while (index1 === index2);
+
+    //     this.foldingStartPt = piece.vertices[index1];
+    //     this.foldingEndPt = piece.vertices[index2];
+
+    //     // console.log(this.foldingStartPt, this.foldingEndPt)
+
+    //     let ptsRight = [];
+    //     let ptsLeft = [];
+    //     piece.vertices.forEach(v => {
+    //         push();
+
+    //         fill(255);
+    //         if (this.isLeft(this.foldingStartPt, this.foldingEndPt, v)) {
+    //             fill(255, 0, 0);
+    //             let relected = this.reflectByTwoPoints(this.foldingStartPt, this.foldingEndPt, v);
+    //             ptsLeft.push(relected);
+    //             circle(relected.x, relected.y, 3);
+    //         } else {
+    //             ptsRight.push(v);
+    //         }
+    //         circle(v.x, v.y, 3);
+    //         pop();
+    //     })
+
+    //     let newPts = this.addLine(this.foldingStartPt, this.foldingEndPt);
+    //     // console.log(newPts);
+    //     newPts.forEach(n => {
+    //         push();
+    //         fill(255, 255, 0);
+    //         circle(n.x, n.y, 3);
+    //         pop();
+    //     })
+
+    //     // console.log(this.paperPieces.indexOf(piece));
+    //     let idx = this.paperPieces.indexOf(piece);
+    //     this.paperPieces[idx].status = false;
+
+    //     let childLeft = new PaperPiece({
+    //         parent: idx,
+    //         vertices: ptsLeft.concat(this.getCrease(ptsLeft, newPts)),
+    //     })
+
+    //     this.paperPieces.push(childLeft);
+
+
+    // }
+
     foldPaper() {
 
         this.temp = [];
 
         let piece = random(this.paperPieces);
-        let index1 = Math.floor(Math.random() * piece.vertices.length);
-        let index2;
 
-        do {
-            index2 = Math.floor(Math.random() * piece.vertices.length);
-        } while (index1 === index2);
+        // random fold line for testing
+        this.foldingStartPt = createVector(
+            random(this.x, this.x + this.w),
+            this.y
+        );
 
-        this.foldingStartPt = piece.vertices[index1];
-        this.foldingEndPt = piece.vertices[index2];
+        this.foldingEndPt = createVector(
+            random(this.x, this.x + this.w),
+            this.y + this.h
+        );
 
-        // console.log(this.foldingStartPt, this.foldingEndPt)
 
         let ptsRight = [];
         let ptsLeft = [];
+        let intersectionPts = [];
+
+
+        // find intersections
+        for (let i = 0; i < piece.vertices.length; i++) {
+
+            let current = piece.vertices[i];
+            let next = piece.vertices[(i + 1) % piece.vertices.length];
+
+            let intersection = this.getIntersection(
+                current,
+                next,
+                this.foldingStartPt,
+                this.foldingEndPt
+            );
+
+            if (intersection) {
+                intersectionPts.push(intersection);
+            }
+        }
+
+
+        // separate points
         piece.vertices.forEach(v => {
+
             push();
 
             fill(255);
-            if (this.isLeft(this.foldingStartPt, this.foldingEndPt, v)) {
+
+            if (this.isLeft(
+                    this.foldingStartPt,
+                    this.foldingEndPt,
+                    v
+                )) {
+
                 fill(255, 0, 0);
-                let relected = this.reflectByTwoPoints(this.foldingStartPt, this.foldingEndPt, v);
-                ptsLeft.push(relected);
-                circle(relected.x, relected.y, 3);
+
+                let reflected = this.reflectByTwoPoints(
+                    this.foldingStartPt,
+                    this.foldingEndPt,
+                    v
+                );
+
+                ptsLeft.push(reflected);
+
+                circle(reflected.x, reflected.y, 5);
+
             } else {
+
                 ptsRight.push(v);
             }
-            circle(v.x, v.y, 3);
+
+            circle(v.x, v.y, 5);
+
             pop();
         })
 
-        let newPts = this.addLine(this.foldingStartPt, this.foldingEndPt);
-        // console.log(newPts);
-        newPts.forEach(n => {
+
+        // draw intersection points
+        intersectionPts.forEach(n => {
+
             push();
+
             fill(255, 255, 0);
-            circle(n.x, n.y, 3);
+            circle(n.x, n.y, 8);
+
             pop();
         })
 
-        // console.log(this.paperPieces.indexOf(piece));
-        let idx = this.paperPieces.indexOf(piece);
-        this.paperPieces[idx].status = false;
 
-        let childLeft = new PaperPiece({
-            parent: idx,
-            vertices: ptsLeft.concat(this.getCrease(ptsLeft, newPts)),
-        })
-
-        this.paperPieces.push(childLeft);
-
-
+        console.log(intersectionPts);
     }
 
     isLeft(a, b, c) {
@@ -207,5 +275,36 @@ class Paper {
             newPts.reverse();
         }
         return newPts;
+    }
+
+    getIntersection(a, b, c, d) {
+
+        let denominator =
+            (a.x - b.x) * (c.y - d.y) -
+            (a.y - b.y) * (c.x - d.x);
+
+        if (denominator == 0) {
+            return null;
+        }
+
+        let t =
+            ((a.x - c.x) * (c.y - d.y) -
+                (a.y - c.y) * (c.x - d.x)) /
+            denominator;
+
+        let u = -((a.x - b.x) * (a.y - c.y) -
+                (a.y - b.y) * (a.x - c.x)) /
+            denominator;
+
+
+        if (t >= 0 && t <= 1 && u >= 0 && u <= 1) {
+
+            let px = a.x + t * (b.x - a.x);
+            let py = a.y + t * (b.y - a.y);
+
+            return createVector(px, py);
+        }
+
+        return null;
     }
 }
