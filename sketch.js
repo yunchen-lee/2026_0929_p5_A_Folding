@@ -1,41 +1,67 @@
-let paper;
+//*---
+const NUM_PAPERS = 3;
+const ITER_PER_FRAME = 20; // ES steps per frame
 
+let fitness;
+let es;
+let myFont;
 
 async function setup() {
     createCanvas(800, 800);
-    background(0);
+    myFont = await loadFont("Inter-Black.otf");
+    textFont(myFont)
 
-    paper = new Paper({
-        x: 100,
-        y: 100,
-        w: 600,
-        h: 600
-    })
-    paper.setup();
-    // paper.foldPaper();
+    // target: centered 200x200 rect
+    fitness = new RectFitness({
+        target: { x: width / 2 - 100, y: height / 2 - 100, w: 200, h: 200 },
+        scale: 0.125,
+        outsideWeight: 1
+    });
 
-
-    for (let i = 0; i < 10; i++) {
-
-        paper.foldPaper();
-
-        blendMode(BLEND);
-        background(0);
-        blendMode(SCREEN);
-        paper.draw();
-
-        await sleep(500);
-        // save('myCanvas.jpg');
+    let papers = [];
+    for (let i = 0; i < NUM_PAPERS; i++) {
+        let p = new Paper({
+            x: random(width),
+            y: random(height / 3, height / 3 * 2),
+            w: random(150, 350),
+            h: random(150, 350)
+        });
+        p.rebuild();
+        papers.push(p);
     }
-    // paper.draw();
 
-    noStroke();
-
-
-
+    es = new ES({
+        papers,
+        fitness: ps => fitness.evaluate(ps),
+        lambda: 1
+    });
 }
 
-function draw() {}
+function draw() {
+    for (let i = 0; i < ITER_PER_FRAME; i++) es.step();
+
+    blendMode(BLEND);
+    background(0);
+    blendMode(SCREEN);
+    noStroke();
+    es.papers.forEach(p => p.draw());
+
+    blendMode(BLEND);
+    fitness.drawTarget();
+
+    fill(255);
+    noStroke();
+    textSize(14);
+    text(
+        "gen " + es.generation +
+        "   score " + nf(es.score, 1, 3) +
+        "   sigma " + nf(es.sigma, 1, 1) +
+        "   last " + es.lastAction +
+        (es.done ? "   DONE" : ""),
+        10, 20
+    );
+}
+//*---
 
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
@@ -51,12 +77,14 @@ class PaperPiece {
         this.status = true;
     }
 
-    draw() {
-        fill(this.clr);
-        beginShape();
-        this.vertices.forEach(v => {
-            vertex(v.x, v.y);
-        })
-        endShape(CLOSE);
-    }
+    //*---
+    draw(g = window) {
+            g.fill(this.clr);
+            g.beginShape();
+            this.vertices.forEach(v => {
+                g.vertex(v.x, v.y);
+            })
+            g.endShape(CLOSE);
+        }
+        //*---
 }
